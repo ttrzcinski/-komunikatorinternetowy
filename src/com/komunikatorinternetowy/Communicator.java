@@ -6,6 +6,8 @@ import java.net.*;
 import java.io.Serializable;
 
 /**
+ * Communicator panel used as chat window.
+ *
  * Created on 2010-01-15, 13:48:59
  *
  * @author Maciej Chwaleba, Tomasz "Rzeźnik" Trzciński <ttrzcinski>
@@ -14,17 +16,16 @@ public class Communicator extends JPanel implements Serializable {
 
     private BufferedReader czytWiad;//strumien odzcytu wiadomosci przychodzacych
     private PrintWriter piszWiad;//strumien wysylania wiadomosci wychodzacych
-    private Socket gniazdo;//przechowuje adres ip i port komunikacji do serwera
+    private Socket socket;//przechowuje adres ip i port komunikacji do serwera
     private String uzytkownik;//Nazwa uzytkownika, jaka jest widoczna na serwerze
-    private File plikzapisu;//plik zapisu rozmów
-
     /**
-     * Creates new form Communicator
+     * File to transcript conversations.
      */
+    private File transcriptFile;
 
     //settery
-    public void set_gniazdo(Socket gniazdo) {
-        this.gniazdo = gniazdo;
+    public void setSocket(Socket socket) {
+        this.socket = socket;
     }
 
     public void set_czytWiad(BufferedReader czytWiad) {
@@ -39,25 +40,27 @@ public class Communicator extends JPanel implements Serializable {
         this.uzytkownik = uzytkownik;
     }
 
-    public void set_plikzapisu(File plikzapisu) {
-        this.plikzapisu = plikzapisu;
+    public void setTranscriptFile(File plikzapisu) {
+        this.transcriptFile = plikzapisu;
     }
 
-
-    //gettery
-    //Zwraca adres ip i port uzywanego gniazda
-    public Socket get_gniazdo() {
-        try {//spróbuj
-            //zwrócic gniazdo jako adrs ip i port komunikacji
+    /**
+     * Returns used socekt.
+     *
+     * @return
+     */
+    public Socket getSocket() {
+        try {
+            //zwrócic socket jako adrs ip i port komunikacji
             //jako nowa instance obiektu z parametrami
-            return this.gniazdo = new Socket("127.0.0.1", 5000);
+            return this.socket = new Socket("127.0.0.1", 5000);
         } catch (IOException ex) {
             //wypisz drzewko błędu
             ex.printStackTrace();
             //wypisz nląd na konsole
             System.out.println("Nie można nawiązać połączenia");
-            //zwroc uzywane gniazdo
-            return this.gniazdo;
+            //zwroc uzywane socket
+            return this.socket;
         }
     }
 
@@ -65,7 +68,7 @@ public class Communicator extends JPanel implements Serializable {
     public BufferedReader get_czytWiad() {
         try {
             //utworz stumien wejsciowy z odczytanego struminia z gniazda
-            InputStreamReader czytStrm = new InputStreamReader(gniazdo.getInputStream());
+            InputStreamReader czytStrm = new InputStreamReader(socket.getInputStream());
             //zwroc zbuforowany strumien
             return this.czytWiad = new BufferedReader(czytStrm);
         } catch (IOException ex) {
@@ -80,8 +83,8 @@ public class Communicator extends JPanel implements Serializable {
     //zrwaca strumien do wysylania wiadomosci
     public PrintWriter get_piszWiad() {
         try {
-            //zwroc odczytany strumien wychodzacy na gniazdo
-            return this.piszWiad = new PrintWriter(gniazdo.getOutputStream());
+            //zwroc odczytany strumien wychodzacy na socket
+            return this.piszWiad = new PrintWriter(socket.getOutputStream());
         } catch (IOException ex) {
             ex.printStackTrace();//wypisz drzewko bledu
             //wypisz blad na konsole
@@ -96,16 +99,20 @@ public class Communicator extends JPanel implements Serializable {
         return this.uzytkownik = jTextField1.getText();
     }
 
-    public File get_plikzapisu() {
-        return this.plikzapisu = new File("zapisaneRozmowy.txt");
+    public File getTranscriptFile() {
+        return this.transcriptFile = new File("zapisaneRozmowy.txt");
     }
 
-    //ustawaia parametry komunikacji na zadane w zmiennych prywatnych
-    private void konfigurujKomunikacje(String nazwa) {
+    /**
+     * Sets params used in communication.
+     *
+     * @param name
+     */
+    private void configureCommunication(String name) {
         //  get_uzytkownik();
         //  set_uzytkownik(uzytkownik);
-        get_gniazdo();
-        set_gniazdo(gniazdo);//ustaw gniazdo komunikacji
+        getSocket();
+        setSocket(socket);//ustaw socket komunikacji
 
         get_czytWiad();
         set_czytWiad(czytWiad);//ustaw odczyt wiadomosci
@@ -123,7 +130,7 @@ public class Communicator extends JPanel implements Serializable {
         initComponents();
         uzytkownik = System.getProperty("user.name");
         //skonfiguruj komuniacje na domyślne
-        konfigurujKomunikacje(uzytkownik);
+        configureCommunication(uzytkownik);
         //wartości wraz z nazwą użytkownika
 
         //Creates new thread to read incoming messages
@@ -249,11 +256,11 @@ public class Communicator extends JPanel implements Serializable {
     //Procedura odpoiwadajca za zapis rozmowy do pliku tekstowego.
     public void zapisz() {
         try {
-            get_plikzapisu();
-            set_plikzapisu(plikzapisu);//ustaw plik zapisu
+            getTranscriptFile();
+            setTranscriptFile(transcriptFile);//ustaw plik zapisu
             String tekst = null;
             //utworz strumien wyjsciowy do zapisu do pliku
-            BufferedWriter zapisz = new BufferedWriter(new FileWriter(plikzapisu));
+            BufferedWriter zapisz = new BufferedWriter(new FileWriter(transcriptFile));
             tekst = jTextArea1.getText();//pobierz tresc rozmowy
             zapisz.write(tekst + "\n");//wypisz tresc rozmowy do strumienia z enterem
             zapisz.close();//zamknij strumien
@@ -281,7 +288,7 @@ public class Communicator extends JPanel implements Serializable {
     public void wczytaj() {
         try {
             //sprobuj odczytac plik przez strumien wejsciowy
-            BufferedReader odczyt = new BufferedReader(new FileReader(plikzapisu));
+            BufferedReader odczyt = new BufferedReader(new FileReader(transcriptFile));
             String wiersz = null;
 
             //dopoki mozna odczytac linie w strumieniu
@@ -351,7 +358,6 @@ public class Communicator extends JPanel implements Serializable {
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                //wypisz drzewko błędu
             }
         }
     }
