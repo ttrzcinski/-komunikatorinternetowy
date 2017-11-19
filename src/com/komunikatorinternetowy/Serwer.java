@@ -1,10 +1,11 @@
+package com.komunikatorinternetowy;
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
 
 /**
- * Klasa odpowiadaj¹ca za dzialanie serwera brodcastowego.
+ * Klasa odpowiadajï¿½ca za dzialanie serwera brodcastowego.
  *
  *
  * @author Maciej
@@ -16,21 +17,21 @@ import java.util.*;
 
 public class Serwer {
 
-    ArrayList strumienieWyjsciowe;//wektor strumieni wyjsciowych s³u¿¹cych
-    //do przechowywania danych do komunikacji z u¿ytkownikami online
-    InterfejsIO log;//odpowiada za obiekt logu
+    ArrayList strumienieWyjsciowe;//wektor strumieni wyjsciowych sï¿½uï¿½ï¿½cych
+    //do przechowywania danych do komunikacji z uï¿½ytkownikami online
+    com.komunikatorinternetowy.InterfejsIO log;//odpowiada za obiekt logu
 
-    //Klasa wewnêtrzna odpowiadaj¹æa za obs³ugê klientów serwera indywidualnie
+    //Klasa wewnï¿½trzna odpowiadajï¿½ï¿½a za obsï¿½ugï¿½ klientï¿½w serwera indywidualnie
     public class ObslugaKlientow implements Runnable
     {
-        private BufferedReader czytWiad;//strunie s³u¿¹cy do czyatania wiadomoœci
+        private BufferedReader czytWiad;//strunie sï¿½uï¿½ï¿½cy do czyatania wiadomoï¿½ci
         private Socket gniazdo;//obiekt gniazda komunikacujnego, czyli adres i port
 
         //Konstruktor parametrowy interfejsu
         public ObslugaKlientow(Socket clientSocket)
         {
             try
-            {//spróbuj
+            {//sprï¿½buj
                 gniazdo = clientSocket;//ustaw gmniazdo na adres i port klienta
                 //odczytaj strumien wejsciowy ze strony zadanego klienta
                 InputStreamReader isReader = new InputStreamReader(gniazdo.getInputStream());
@@ -38,14 +39,14 @@ public class Serwer {
             }
             catch(Exception ex)
             {
-                ex.printStackTrace();//wypisz drzewko b³êdu}
+                ex.printStackTrace();//wypisz drzewko bï¿½ï¿½du}
             }
         }
 
-        //Procedura wymuszajca dzialanie w w¹tku
+        //Procedura wymuszajca dzialanie w wï¿½tku
         public void run(){
-            String wiadomosc;//³¹ñcuch wiadomosci
-            try{//spróbuj
+            String wiadomosc;//ï¿½ï¿½ï¿½cuch wiadomosci
+            try{//sprï¿½buj
                 //jesli mozna odczytac linie tekstu w wiadomosci
                 while ((wiadomosc = czytWiad.readLine()) != null)
                 {
@@ -57,14 +58,14 @@ public class Serwer {
             }
             catch(Exception ex)
             {
-                ex.printStackTrace();//wypisz drzewko b³êdu
+                ex.printStackTrace();//wypisz drzewko bï¿½ï¿½du
             }
         }
     }
     //koniec klasy ObslugaKlientow
 
-    //glówna procedura wymuszajaca dzialanie obiektu serwera
-    //na instacji konsturktora.. którego nie ma..
+    //glï¿½wna procedura wymuszajaca dzialanie obiektu serwera
+    //na instacji konsturktora.. ktï¿½rego nie ma..
     public static void main(String[] args){
         new Serwer().dzialanie();
     }
@@ -77,7 +78,7 @@ public class Serwer {
             //ustaw port serwera na 5000
             ServerSocket serverSock = new ServerSocket(5000);
 
-            //dopóki mo¿na
+            //dopï¿½ki moï¿½na
             while(true){
                 //zatwierdz port do komunikacji
                 Socket gniazdoKlienta = serverSock.accept();
@@ -99,9 +100,9 @@ public class Serwer {
         }
     }
 
-    //Procedura wysy³aj¹ca ³¹ñcuch do wszstkich klientów
+    //Procedura wysyï¿½ajï¿½ca ï¿½ï¿½ï¿½cuch do wszstkich klientï¿½w
     public void wyslij(String message){
-        //iterator s³u¿¹cy do obœ³ugoi po kolei strumieni wyjsciowych
+        //iterator sï¿½uï¿½ï¿½cy do obï¿½ï¿½ugoi po kolei strumieni wyjsciowych
         Iterator it = strumienieWyjsciowe.iterator();
         //dopoki jeszcze jest jakis na liscie
         while(it.hasNext()){

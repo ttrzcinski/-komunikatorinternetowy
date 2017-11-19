@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package szyfrrzeznika;
+package com.komunikatorinternetowy;
 
 /**
  * Klasa odpowiedzialna za silnik szyfrujący komponentu.

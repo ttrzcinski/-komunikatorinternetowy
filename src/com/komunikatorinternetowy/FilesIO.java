@@ -1,9 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-package logopisarz;
+package com.komunikatorinternetowy;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -15,16 +10,17 @@ import java.util.Calendar;
 import java.util.Date;
 
 /**
- * Klasa służąca do włąściwego operowania na treści plików i zmiennych.
+ * Responsible for proper operating on files and variables.
  *
- * @author ADMIN
+ * @author Tomasz "Rzeźnik" Trzciński <ttrzcinski>
  */
 public class InterfejsIO {
-    //konstruktory
-    InterfejsIO()//konstruktore bezparametrowy
+    InterfejsIO()
     {
-        this.zeruj();//wyzeruj zmienne
+        //Set variables to default start state
+        this.zeruj();
     }
+
     InterfejsIO(String NazwaPliku)//konstruktor parametrowy
     {
         this.zeruj();//wyzeruj zmienne
@@ -40,20 +36,21 @@ public class InterfejsIO {
     //ktory wystapil
 
     //procedury wewnętrzne
-    private void zeruj()//zeruje wartosci zmiennyhc prywatnych
+    private void zeruj()//zeruje wartosci zmiennych prywatnych
     {
         this.sciezka = "";//to ten sam folder
         this.nazwa_pliku = "Log.txt";//plik logu to Log.txt
         this.ostatni_blad = "Brak błędu";//nie ma błędu
-    }//
+    }
 
     //ustawia tresc bledu na zadaną
-    private void zaznaczBlad(String tresc){this.ostatni_blad=tresc;}
+    private void zaznaczBlad(String tresc) {
+        this.ostatni_blad = tresc;
+    }
 
     //procedura zwraca aktualna date i godzine w okreslonej formatce
-    private String zwrocAktualnaDate()
-    {
-        String data="";//Wyzeruj zmienną
+    private String zwrocAktualnaDate() {
+        String data = "";//Wyzeruj zmienną
         Date teraz = Calendar.getInstance().getTime();//Pobierz aktualny moment
         //poniżej utwórz formatkę do konwersji daty.
         SimpleDateFormat formatka = new SimpleDateFormat("HH:mm dd-MM-yyyy");
@@ -64,17 +61,15 @@ public class InterfejsIO {
 
     //Procedury wymiany danych z plikami
     //Procedura dodająca date i godzine do tresci wpisu
-    private String zwrocLinieDoWpisu(String tresc)
-    {
-        String zwr="";
+    private String zwrocLinieDoWpisu(String tresc) {
+        String zwr = "";
         //dodaje godzine i date i naziwsy doń do tresci
         zwr = "[" + this.zwrocAktualnaDate() + "] " + tresc;
         return zwr;//zwroc powsatłą linie tekstu
     }//
 
     //Procedura tworzy nowy plik logu
-    private void utworzNowyPlik()
-    {
+    private void utworzNowyPlik() {
         try//spróbuj
         {
             //utworz strumien do zapisu odnoszacy sie do pliku
@@ -82,45 +77,38 @@ public class InterfejsIO {
             PrintWriter wy = new PrintWriter(new FileWriter(this.sciezka + this.nazwa_pliku));
 
             //dadaj do pliku naglowek
-            wy.println("<<<Log programu utworzony "+this.zwrocAktualnaDate()+" >>>");
+            wy.println("<<<Log programu utworzony " + this.zwrocAktualnaDate() + " >>>");
             //dopisz powód utworzenia nowego pliku
             wy.println(this.zwrocLinieDoWpisu("Nie można odczytać pliku logu. Utworzono nowy."));
 
             //zamknij strumien
             wy.close();
-        }
-        catch(IOException ex1)
-        {
+        } catch (IOException ex1) {
             //jeśli coś nie wyszło, pokaz komunikat błędu
-            this.zaznaczBlad("Nie mozna utworzyc pliku "+this.sciezka + this.nazwa_pliku);
+            this.zaznaczBlad("Nie mozna utworzyc pliku " + this.sciezka + this.nazwa_pliku);
         }
     }//
 
     //Pobierz tresć pliku i ją zwróć jako łąńcuch tekstowy
-    public String pobierzTrescLogu()
-    {
-        int i=0;//iterator i
+    public String pobierzTrescLogu() {
+        int i = 0;//iterator i
         String linia = "";//linia wczytana z pliku
         String wczytano = "";//łąćżny łąńcuch liniii wczytany z pliku
-        String zwr="";//łąńcuch zwrotny
+        String zwr = "";//łąńcuch zwrotny
 
-        try
-        {
+        try {
             //czy da sie odczytac, czyli istnieje
             BufferedReader we = new BufferedReader(new FileReader(this.sciezka + this.nazwa_pliku));
 
             //dopóki nie da sie odczyta linie - w javie nie ma EOF
-            while((linia = we.readLine()) != null)
-            {
+            while ((linia = we.readLine()) != null) {
                 //dopisz wczytana linie do łąńcucha wczytano i oddziel enterem
                 wczytano = wczytano + linia + "\r\n";
             }
 
             we.close();//zamknij strumien
             zwr = wczytano;//zwroc wczytana wartosc do zmiennej zwrotnej
-        }
-        catch(IOException ex3)
-        {
+        } catch (IOException ex3) {
             //wypisz błąd odczytu
             this.zaznaczBlad("Nie mozna wczytać logu.");
             //wczytano="";
@@ -129,17 +117,13 @@ public class InterfejsIO {
         }//this.utworzNowyPlik(true);}
 
         return zwr;//zwróc wczytaną tresc
-    }//
+    }
 
     //Procedura dopisuje zadaną treść do pliku logu
-    public void dopisz(String tresc)
-    {
-        try//spróbuj
-        {
-            String wczytano = "";//łąńcuch wczytany
-
+    public void dopisz(String tresc) {
+        try {
             //pobierz tresc pliku logu pod zmienną wczytano
-            wczytano = this.pobierzTrescLogu();
+            String wczytano = this.pobierzTrescLogu();
 
             //utworz strumien do pliku logu
             PrintWriter wy = new PrintWriter(new FileWriter(this.sciezka + this.nazwa_pliku));
@@ -148,22 +132,35 @@ public class InterfejsIO {
             //wy.println(tresc);//zapisz co bylo
             wy.println(this.zwrocLinieDoWpisu(tresc));//dopisz linie
             wy.close();//zamknij strumien
-        }
-        catch(IOException exc2)
-        {
-            //zaznacz tresc błęðu w zmiennej
+        } catch (IOException exc2) {
+            //mark error content in error
             this.zaznaczBlad(exc2.toString());
         }
-    }//
+    }
 
-    //settery
-    public void setNazwaPliku(String NowaNazwa){this.nazwa_pliku = NowaNazwa;}
-    public void setSciezkaPliku(String Sciezka){this.sciezka = Sciezka;}
+    //Settery
+    public void setNazwaPliku(String NowaNazwa) {
+        this.nazwa_pliku = NowaNazwa;
+    }
 
-    public void setDomyslne(){this.zeruj();}
+    public void setSciezkaPliku(String Sciezka) {
+        this.sciezka = Sciezka;
+    }
 
-    //gettery
-    public String getNazwaPliku(){return this.nazwa_pliku;}
-    public String getSciezkaPliku(){return this.sciezka;}
-    public String getOstatniBlad(){return this.ostatni_blad;}
-}//
+    public void setDomyslne() {
+        this.zeruj();
+    }
+
+    //Gettery
+    public String getNazwaPliku() {
+        return this.nazwa_pliku;
+    }
+
+    public String getSciezkaPliku() {
+        return this.sciezka;
+    }
+
+    public String getOstatniBlad() {
+        return this.ostatni_blad;
+    }
+}

@@ -9,7 +9,7 @@
  * Created on 2010-04-14, 08:07:59
  */
 
-package szyfrrzeznika;
+package com.komunikatorinternetowy;
 
 import java.awt.Color;
 import java.awt.TextField;
