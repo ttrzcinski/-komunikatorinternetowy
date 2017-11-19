@@ -1,110 +1,129 @@
 package com.komunikatorinternetowy;
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 
-/**
- * Klasa odpowiadaj�ca za dzialanie serwera broadcastowego.
- *
- * @author Maciej
- */
+
+import com.komunikatorinternetowy.Content.Strings;
 
 import java.io.*;
 import java.net.*;
+import java.text.MessageFormat;
 import java.util.*;
 
-public class Serwer {
+/**
+ * Represents broadcast server.
+ *
+ * @author Maciej Chwaleba, Tomasz "Rzeźnik" Trzciński <ttrzcinski>
+ */
+public class Server {
+    /**
+     * Represents default port of communication with client.
+     */
+    private final static int DEFAULT_PORT = 5000;
 
-    ArrayList strumienieWyjsciowe;//wektor strumieni wyjsciowych s�u��cych
-    //do przechowywania danych do komunikacji z u�ytkownikami online
-    FilesIO log;//odpowiada za obiekt logu
+    /**
+     * Vector of output streams.
+     */
+    private ArrayList outStreams;
+    /**
+     * Interface to log file.
+     */
+    private FilesIO log;
 
-    //Klasa wewn�trzna odpowiadaj��a za obs�ug� klient�w serwera indywidualnie
-    public class ObslugaKlientow implements Runnable {
-        private BufferedReader czytWiad;//strunie s�u��cy do czyatania wiadomo�ci
-        private Socket gniazdo;//obiekt gniazda komunikacujnego, czyli adres i port
+    /**
+     * Inner class responsible for serving individual customers.
+     */
+    public class ClientServer implements Runnable {
+        //Stream used to read messages
+        private BufferedReader readMessages;
 
-        //Konstruktor parametrowy interfejsu
-        public ObslugaKlientow(Socket clientSocket) {
-            try {//spr�buj
-                gniazdo = clientSocket;//ustaw gmniazdo na adres i port klienta
-                //odczytaj strumien wejsciowy ze strony zadanego klienta
-                InputStreamReader isReader = new InputStreamReader(gniazdo.getInputStream());
-                czytWiad = new BufferedReader(isReader);//zbuforuj go
+        /**
+         * Creates new web interface to operate individual clients.
+         *
+         * @param clientSocket individual client's socket
+         */
+        public ClientServer(Socket clientSocket) {
+            try {
+                //Read input stream from the side of pointed customer
+                InputStreamReader isReader =
+                        new InputStreamReader(clientSocket.getInputStream());
+                readMessages = new BufferedReader(isReader);
             } catch (Exception ex) {
-                ex.printStackTrace();//wypisz drzewko b��du}
+                ex.printStackTrace();
             }
         }
 
-        //Procedura wymuszajca dzialanie w w�tku
+        /**
+         * Runs in thread.
+         */
         public void run() {
-            String wiadomosc;//���cuch wiadomosci
-            try {//spr�buj
-                //jesli mozna odczytac linie tekstu w wiadomosci
-                while ((wiadomosc = czytWiad.readLine()) != null) {
-                    //wypisz odczytana linie
-                    System.out.println("Odczytano: " + wiadomosc);
-                    //wyslij odczytana linie
-                    wyslij(wiadomosc);
+            try {
+                String message;
+                //Read line by line read messages
+                while ((message = readMessages.readLine()) != null) {
+                    //Show on console read line
+                    System.out.println(
+                            MessageFormat.format(Strings.SV_CONSOLE_MSG_READ, message)
+                    );
+                    //Send further read line
+                    send(message);
                 }
             } catch (Exception ex) {
-                ex.printStackTrace();//wypisz drzewko b��du
+                ex.printStackTrace();
             }
         }
     }
-    //koniec klasy ObslugaKlientow
 
-    //gl�wna procedura wymuszajaca dzialanie obiektu serwera
-    //na instacji konsturktora.. kt�rego nie ma..
+    /**
+     * Main method calling work order on server.
+     * @param args environment run arguments
+     */
     public static void main(String[] args) {
-        new Serwer().dzialanie();
+        new Server().work();
     }
 
-    //Procedura odpowiadajaca za prace obiektu serwera
-    public void dzialanie() {
+    /**
+     * Represents basic server's workflow.
+     */
+    public void work() {
 
-        strumienieWyjsciowe = new ArrayList();//nowa lista strumienii
-        try {//sprobuj
-            //ustaw port serwera na 5000
-            ServerSocket serverSock = new ServerSocket(5000);
+        outStreams = new ArrayList();
+        try {
+            ServerSocket serverSock = new ServerSocket(DEFAULT_PORT);
 
-            //dop�ki mo�na
             while (true) {
-                //zatwierdz port do komunikacji
-                Socket gniazdoKlienta = serverSock.accept();
-                //ustorz stumien do wypisywania wiadomosci
-                PrintWriter pisarz = new PrintWriter(gniazdoKlienta.getOutputStream());
-                //dodaj nowy strumien wyjsciowy do listy wstumieni wyjsciowych
-                strumienieWyjsciowe.add(pisarz);
-
-                //utworz nowy watek do obslugi klienta
-                Thread t = new Thread(new ObslugaKlientow(gniazdoKlienta));
-                //startuj prace watku
-                t.start();
-
-                System.out.println("polaczono");//wypisz na konsole informacje o polaczaeniu
+                //Accept port of communication
+                Socket clientSocket = serverSock.accept();
+                //Create new output stream to send messages
+                PrintWriter outWriter = new PrintWriter(clientSocket.getOutputStream());
+                outStreams.add(outWriter);
+                //Create new thread to serve clients
+                Thread clientServerTread = new Thread(new ClientServer(clientSocket));
+                clientServerTread.start();
+                //Show on console information about connection
+                System.out.println(Strings.SV_CONSOLE_MSG_CONNECTED);
             }
         } catch (Exception ex) {
-            ex.printStackTrace();//wypisz drzewko bledu
+            ex.printStackTrace();
         }
     }
 
-    //Procedura wysy�aj�ca ���cuch do wszstkich klient�w
-    public void wyslij(String message) {
-        //iterator s�u��cy do ob��ugoi po kolei strumieni wyjsciowych
-        Iterator it = strumienieWyjsciowe.iterator();
-        //dopoki jeszcze jest jakis na liscie
+    /**
+     * Sends given massage further as broadcast.
+     *
+     * @param message given content
+     */
+    public void send(String message) {
+        //Obtain iterator serving streams one by one
+        Iterator it = outStreams.iterator();
         while (it.hasNext()) {
-            try {//sprobuj
-                //wybierz kolejny strumien
-                PrintWriter piszWiad = (PrintWriter) it.next();
-                //wypisz klientowi wiadomosc
-                piszWiad.println(message);
-                //wyzeruj strumien
-                piszWiad.flush();
+            try {
+                //Pick another stream
+                PrintWriter printWriter = (PrintWriter) it.next();
+                //Send customer a message
+                printWriter.println(message);
+                //Flush the stream
+                printWriter.flush();
             } catch (Exception ex) {
-                ex.printStackTrace();//wypisz drzewko bledu
+                ex.printStackTrace();
             }
         }
     }

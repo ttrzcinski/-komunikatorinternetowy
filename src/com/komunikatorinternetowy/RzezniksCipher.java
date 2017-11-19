@@ -1,154 +1,149 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package com.komunikatorinternetowy;
 
 /**
- * Klasa odpowiedzialna za silnik szyfrujący komponentu.
- * Szyfrowanie i deszyfrowanie odbywa się za pomocą metody SzyfrRzeznika.
+ * Ciphering engine of component.
  *
- * Szyfrowanie metodą SzyfrRzeznika:
+ * It is performed with Rzeźnik's Cipher.
+ * <p>
+ * Ciphering method Rzeźnik's Cipher:
  * Lz = Lp + nz + int(plk), gdzie
- *
- * Lz - wartość zakodowanej litery,
- * Lp - wartość litery początkowa,
- * nz - numer znaku w ciągu szyfrowanym,
- * plk - pobrana wartośc liczbowa znaku z klucza prostego, czym wartość indexu
- *       jest skracana tak długo, aż będzie z zakresu 0 do długości ciągu.
+ * <p>
+ * Lz - Value of coded character
+ * Lp - Beginning value of character
+ * nz - index of character in message to cipher
+ * plk - obtained Unicode code from simple key, after which index value
+ * is shorten until it will be from range of simple key's length.
  *
  * @author Tomasz "Rzeźnik" Trzciński
  */
-public class SzyfrRzeznika {
-    //konsteruktory
-    SzyfrRzeznika(){}//bezparametrowy
-    SzyfrRzeznika(String klucz_prosty, int przesuniecie_znakowe)//konstruktor parametrowy
-    {
-        this.klucz1 = klucz_prosty;
-        //ustaw klucz prosty na podany parametr
-        this.przesuniecie = przesuniecie_znakowe;
-        //ustaw przesuniecie na zadane parametrem
-    }//
-    //koniec konstruktorów
-
-    //zmienne
-    private String klucz1 = "FajnoowyKluczeekEmoooMaartyynki";
-    //klucz prosty tekstowy - służy jako podstawa szyfrowania
-    private int przesuniecie = 1;
-    //przesunięcie znakowe - odpowiada za przesunięcie znaku w Unicode
-    //koniec zmienne
-    
-    //procki
-    /*
-     * Procedura zwracająca znak o podanym numerze z klucza prostego
+public class RzezniksCipher {
+    /**
+     * Default value of key one.
      */
-    public char zwrocLitereKluczaProstego(int nr)
-    {
-        char zwr = 'a';//utworz zmienna zwrotną
+    private final static String DEFAULT_KEY_ONE = "FajnoowyKluczeekEmoooMaartyynki";
+    /**
+     * Default value of bias.
+     */
+    private final static int DEFAULT_BIAS = 1;
 
-        //dopóki index (nr) litery jest z poza długości klucz prostego
-        while (nr>this.klucz1.length()-1)
-        {
-            nr-=this.klucz1.length()-1;
-            //zmiejsz index o długość klucza porstego
-            //zmiejszać bedzie tak długo, az litera będzie z zakresu
-            //0 do długośc klucza
+    /**
+     * Simple key used as a base ciphering.
+     */
+    private String simpleKey = DEFAULT_KEY_ONE;
+    /**
+     * Number of alphabetical change in char in Unicode.
+     */
+    private int bias = DEFAULT_BIAS;
+
+    /**
+     * Creates new instance of Rzeźnik's Cipherer with given characters.
+     *
+     * @param simpleKey given simple cipher key
+     * @param bias      given bias in Unicode
+     */
+    RzezniksCipher(String simpleKey, int bias) {
+        this.simpleKey = simpleKey;
+        this.bias = bias;
+    }
+
+    /**
+     * Obtains character with given number from simple key.
+     *
+     * @param nr number of char
+     * @return character from simple key
+     */
+    public char obtainLetterOfSimpleKey(int nr) {
+        //Until index of letter is out of range of simple's key length
+        while (nr > this.simpleKey.length() - 1) {
+            //Decrease index for a length of simple key
+            nr -= this.simpleKey.length() - 1;
         }
+        //Return letter from simple key
+        return this.simpleKey.charAt(nr);
+    }
 
-        zwr = this.klucz1.charAt(nr);//przypisz litere na zmienną zwrotną
-
-        return zwr;//zwróc litere
-    }//
-
-    /*
-     * Procedura odpowiadająca za zaszyforowanie zadanego łańcucha tekstowego
-     * zgodnie z podanymi parametrami oraz zwrócenie go.
+    /**
+     * Ciphers given phrase.
+     *
+     * @param phrase given phrase.
+     * @return ciphered phrase
      */
-    public String szyfruj(String tekst)
-    {
-        String zas = "";//zmienna zaszyfrowana - wyzeruj
-        char[] eska = new char[tekst.length()];
-        //tablica liter slużąca do przechowywania tekstu
-        //jako wektora charów - aby wykonywać obliczenia
-        //na ich wartościach w Unicode
-
-        int i=0;//iterator i
-        int oIle=0;//o ile zmienić wybraną literę
-        int wart=0;//wartość unicode
-        for (i=0; i<tekst.length(); i++)
-        {
-            //wylicz przesuniecie wartości znaku unicode
-            oIle = i + this.przesuniecie + (int)this.zwrocLitereKluczaProstego(i);
-            //przesun znak unicode o wyliczoną wartość
-            wart = (int)tekst.charAt(i) + oIle;
-            //przypisdz wartość Unicode do wektora pod kolejnym indeksem
-            eska[i] = (char)wart;
-        }//koniec fora
-
-        //przetwórz wektor liter zakodowany na łąńcuch znakowy
-        zas = String.copyValueOf(eska);
-        return zas;//zwróc zaszyfrowany łąńcuch
-    }//
-
-    /*
-     * Procedura odpowiadająca za deszyforowanie zadanego łańcucha tekstowego
-     * zgodnie z podanymi parametrami oraz zwrócenie go.
-     */
-    public String deszyfruj(String zaszyfr)
-    {
-        String tekst="";//zmienna tekstu po odszyfrowaniu
-        char[] efekt = new char[zaszyfr.length()];
-        //tablica liter do przechowywania wyliczonych wartości
-        //liter Unicode do zwrocenia
-
-        int i=0;//iterator i
-        //od początku do końca zaszyforwanego tekstu
-        for (i=0; i<zaszyfr.length(); i++)
-        {
-            //Odszyfruj wartośc litery przez popranie jeje wartości Uniceode
-            //i odjęcie jej indeksu, przesunięcia i odpowiadającej jej
-            //litery z klucza prostego, po czym ją nadpiszesz
-            //w tablicy pod indexem i
-            efekt[i] = (char)((int)zaszyfr.charAt(i) - i - this.przesuniecie - (int)this.zwrocLitereKluczaProstego(i));
+    public String cipher(String phrase) {
+        //Array of characters to count their new values in unicode
+        char[] chars = new char[phrase.length()];
+        //Keeps value, for how much character show be changed
+        int countedBias = 0;
+        int unicodeValue = 0;
+        for (int i = 0; i < phrase.length(); i++) {
+            //Count bias value in Unicode
+            countedBias = i + this.bias + (int) this.obtainLetterOfSimpleKey(i);
+            //Move char's index in Unicode for a counted value
+            unicodeValue = (int) phrase.charAt(i) + countedBias;
+            //Add counted unicode char to array at the end
+            chars[i] = (char) unicodeValue;
         }
+        //Convert value of counted characters to String
+        return String.copyValueOf(chars);
+    }
 
-        //konwertuj wartość wyliczonego wektora liter na łąńcuch znakowy
-        tekst = String.copyValueOf(efekt);
-        return tekst;//zwróc odszyfrowany tekst
-    }//
-
-    //setter
-    /*
-     * Nadpisuje zawartość klucza podstawowego zadanym łańcuchem.
+    /**
+     * Deciphers given phrase.
+     *
+     * @param cipheredPhrase given phrase
+     * @return deciphered message
      */
-    public void setKluczProsty(String nowy){this.klucz1 = nowy;}//
-
-    /*
-     * Nadpisuje wartość przesunięcia zadaną wartością, pod warunkiem, że
-     * mieści się ona w zadanym zakresie, czyli <0, 50>.
-     */
-    public void setPrzesuniecieZnakowe(int wart)
-    {
-        //jeśli parametr jest z zakresu od 0 do 50..
-        if (wart>-1 && wart<51)
-        {
-            //zmien watrosc przesuniecia znakowego
-            this.przesuniecie = wart;
+    public String decipher(String cipheredPhrase) {
+        //Table of counted letters to return
+        char[] effect = new char[cipheredPhrase.length()];
+        //Iterate letter by letter given phrase
+        for (int i = 0; i < cipheredPhrase.length(); i++) {
+            //Decipher value of letter through reading its Unicode value
+            //and reducing its index, bias and connected to it letter from simple key
+            //after which it is overwritten in table with index i
+            effect[i] = (char) (
+                    (int) cipheredPhrase.charAt(i) - i - this.bias - (int) this.obtainLetterOfSimpleKey(i)
+            );
         }
-    }//
+        //Convert value of counted characters to String
+        return String.copyValueOf(effect);
+    }
 
-    //koniec setterów
-
-    //gettery
-    /*
-     * Zwraca klucz postawowy.
+    /**
+     * Sets simple key.
+     *
+     * @param key given key
      */
-    public String getKluczProsty(){return this.klucz1;}
-    /*
-     * Zwraca wartość przesunięcia znakowego.
-     */
-    public int getPrzesuniecieZnakowe(){return this.przesuniecie;}
+    public void setSimpleKey(String key) {
+        this.simpleKey = key;
+    }
 
-    //koniec getterów
-}//koniec SzyfrRzeznika
+    /**
+     * Sets bias to given value, if it is withing simple's key length.
+     *
+     * @param bias given value
+     */
+    public void setBias(int bias) {
+        //If param in withing range of simple key length
+        if (bias > -1 && bias < this.DEFAULT_KEY_ONE.length()) {
+            this.bias = bias;
+        }
+    }
+
+    /**
+     * Obtains value of kept simple key.
+     *
+     * @return simple key
+     */
+    public String getSimpleKey() {
+        return this.simpleKey;
+    }
+
+    /**
+     * Obtains value of bias.
+     *
+     * @return current bias value
+     */
+    public int getBias() {
+        return this.bias;
+    }
+}

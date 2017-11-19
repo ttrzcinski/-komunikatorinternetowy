@@ -41,7 +41,7 @@ public class WorkingPanel extends JPanel {
     /**
      * Sets component to given state, changes its color, caption and state of flagSaving.
      *
-     * @param stateIndex
+     * @param stateIndex wanted state
      */
     private void setState(int stateIndex) {
         switch (stateIndex) {
