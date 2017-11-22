@@ -1,9 +1,11 @@
 package com.komunikatorinternetowy;
 
-import javax.swing.JPanel;
+import com.komunikatorinternetowy.content.Strings;
+import com.komunikatorinternetowy.utils.ChatFileIO;
+
+import javax.swing.*;
 import java.io.*;
-import java.net.*;
-import java.io.Serializable;
+import java.net.Socket;
 
 /**
  * Communicator panel used as chat window.
@@ -13,129 +15,183 @@ import java.io.Serializable;
  * @author Maciej Chwaleba, Tomasz "Rzeźnik" Trzciński <ttrzcinski>
  */
 public class Communicator extends JPanel implements Serializable {
+    private final static String DEFAULT_FILENAME_SAVED_TALKS = "zapisaneRozmowy.txt";
+    private final static String DEFAULT_SOCKET_IP = "127.0.0.1";
+    private final static int DEFAULT_SOCKET_PORT = 5000;
 
-    private BufferedReader czytWiad;//strumien odzcytu wiadomosci przychodzacych
-    private PrintWriter piszWiad;//strumien wysylania wiadomosci wychodzacych
-    private Socket socket;//przechowuje adres ip i port komunikacji do serwera
-    private String uzytkownik;//Nazwa uzytkownika, jaka jest widoczna na serwerze
     /**
-     * File to transcript conversations.
+     * Incoming messages stream.
      */
-    private File transcriptFile;
+    private BufferedReader incomingMessagesStream;
+    /**
+     * Outgoing messages stream.
+     */
+    private PrintWriter outgoingMessagesStream;
+    /**
+     * Keeps IP Address and port fir communication,
+     */
+    private Socket socket;
+    /**
+     * User name, which can be seen on server.
+     */
+    private String userName;
+    /**
+     * File interface to chat file.
+     */
+    private ChatFileIO chatFile;
 
-    //settery
+    /**
+     * Creates new instance of Communicator.
+     */
+    public Communicator() {
+        //Render the UI components.
+        initComponents();
+        //Obtain OS's username and set it as default
+        userName = System.getProperty("user.name");
+        configureCommunication(userName);
+
+        //Creates new thread to read incoming messages
+        Thread receiver = new Thread(new MessageReceiver());
+        receiver.start();
+    }
+
     public void setSocket(Socket socket) {
         this.socket = socket;
     }
 
-    public void set_czytWiad(BufferedReader czytWiad) {
-        this.czytWiad = czytWiad;
+    public void setIncoming(BufferedReader incomingStream) {
+        this.incomingMessagesStream = incomingStream;
     }
 
-    public void set_piszWiad(PrintWriter piszWiad) {
-        this.piszWiad = piszWiad;
+    public void setOutgoing(PrintWriter outgoingStream) {
+        this.outgoingMessagesStream = outgoingStream;
     }
 
-    public void set_uzytkownik(String uzytkownik) {
-        this.uzytkownik = uzytkownik;
-    }
-
-    public void setTranscriptFile(File plikzapisu) {
-        this.transcriptFile = plikzapisu;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     /**
-     * Returns used socekt.
+     * Returns currently used socket.
      *
-     * @return
+     * @return currently used socket
      */
     public Socket getSocket() {
         try {
-            //zwrócic socket jako adrs ip i port komunikacji
-            //jako nowa instance obiektu z parametrami
-            return this.socket = new Socket("127.0.0.1", 5000);
+            this.socket = new Socket(DEFAULT_SOCKET_IP, DEFAULT_SOCKET_PORT);
+        } catch (IOException ioex1) {
+            ioex1.printStackTrace();
+            System.err.println(Strings.CM_MSG_NO_CONNECTION);
+        }
+        return this.socket;
+    }
+
+    /**
+     * Returns stream to receive messages.
+     *
+     * @return incoming messages stream
+     */
+    public BufferedReader getIncoming() {
+        try {
+            //Create input stream based on read stream from socket
+            InputStreamReader inputStream = new InputStreamReader(this.socket.getInputStream());
+            this.incomingMessagesStream = new BufferedReader(inputStream);
         } catch (IOException ex) {
-            //wypisz drzewko błędu
             ex.printStackTrace();
-            //wypisz nląd na konsole
-            System.out.println("Nie można nawiązać połączenia");
-            //zwroc uzywane socket
-            return this.socket;
+            System.err.println(Strings.CM_MSG_NO_CONNECTION);
         }
+        return this.incomingMessagesStream;
     }
 
-    //Procedura zwracajaca zbuforowany strumien odczytanej wiadomosci
-    public BufferedReader get_czytWiad() {
+    /**
+     * Returns stream to send message.
+     *
+     * @return outgoing messages stream
+     */
+    public PrintWriter getOutgoing() {
         try {
-            //utworz stumien wejsciowy z odczytanego struminia z gniazda
-            InputStreamReader czytStrm = new InputStreamReader(socket.getInputStream());
-            //zwroc zbuforowany strumien
-            return this.czytWiad = new BufferedReader(czytStrm);
+            //Set outgoing stream targeting socket
+            this.outgoingMessagesStream = new PrintWriter(socket.getOutputStream());
         } catch (IOException ex) {
-            ex.printStackTrace();//wypisz drzewko bledu
-            //wypisz blad na konsole
-            System.out.println("Nie można nawiązać połączenia");
-            //zwroc strumien odczytanej wiadomosci
-            return this.czytWiad;
+            ex.printStackTrace();
+            System.err.println(Strings.CM_MSG_NO_CONNECTION);
         }
+        return this.outgoingMessagesStream;
     }
 
-    //zrwaca strumien do wysylania wiadomosci
-    public PrintWriter get_piszWiad() {
-        try {
-            //zwroc odczytany strumien wychodzacy na socket
-            return this.piszWiad = new PrintWriter(socket.getOutputStream());
-        } catch (IOException ex) {
-            ex.printStackTrace();//wypisz drzewko bledu
-            //wypisz blad na konsole
-            System.out.println("Nie można nawiązać połączenia");
-            //zwróc strumien wychodzacy
-            return this.piszWiad;
-        }
-    }
-
-    //zwraca nazwe uzytkownika
-    public String get_uzytkownik() {
-        return this.uzytkownik = jTextField1.getText();
-    }
-
-    public File getTranscriptFile() {
-        return this.transcriptFile = new File("zapisaneRozmowy.txt");
+    /**
+     * Returns kept user name.
+     *
+     * @return user name
+     */
+    public String getUserName() {
+        return this.userName = jTextField1.getText();
     }
 
     /**
      * Sets params used in communication.
      *
-     * @param name
+     * @param username given user name
      */
-    private void configureCommunication(String name) {
-        //  get_uzytkownik();
-        //  set_uzytkownik(uzytkownik);
+    private void configureCommunication(String username) {
+        //Set name only, if was given
+        if (username != null && username.trim().length() > 0) {
+            getUserName();
+            setUserName(username);
+        }
         getSocket();
-        setSocket(socket);//ustaw socket komunikacji
+        //Read and set socket (IP and port)
+        setSocket(socket);
 
-        get_czytWiad();
-        set_czytWiad(czytWiad);//ustaw odczyt wiadomosci
+        //TODO NPE ON SOCKET - show dialog message and stop the application
 
-        get_piszWiad();
-        set_piszWiad(piszWiad);//ustaw wysyłkę wiadomosci
+        getIncoming();
+        //Read and set incoming stream
+        setIncoming(incomingMessagesStream);
 
-        //wypisz komunikat o gotowosci pracy
-        System.out.println("Obsluga sieci przygotowana");
+        getOutgoing();
+        //Read and set outgoing stream
+        setOutgoing(outgoingMessagesStream);
+
+        //Show on console message with ready state
+        System.out.println(Strings.CM_MSG_READY);
     }
 
-    //Konstruktor bezparametrowy
-    public Communicator() {
-        //wyrysuj komponenty dodane automatycznie
-        initComponents();
-        uzytkownik = System.getProperty("user.name");
-        //skonfiguruj komuniacje na domyślne
-        configureCommunication(uzytkownik);
-        //wartości wraz z nazwą użytkownika
+    private void assertChatFile() {
+        //Assert presence of chatFile
+        if (this.chatFile == null) {
+            this.chatFile = new ChatFileIO(DEFAULT_FILENAME_SAVED_TALKS);
+        }
+    }
 
-        //Creates new thread to read incoming messages
-        Thread watekOdbiorcy = new Thread(new OdbiorcaKomunikatow());
-        watekOdbiorcy.start();
+    /**
+     * Loads content of messages and show them in chat text area.
+     */
+    public void loadMessages() {
+        //Assert presence of chatFile
+        this.assertChatFile();
+        //Obtain file content to present
+        String results = this.chatFile.load(DEFAULT_FILENAME_SAVED_TALKS);
+        ChatTextArea.append(String.format("%s\n", results));
+        //TODO CHANGE TO FOREACH ON SPLIT OR SOME LAM ONE-LINER
+        //Read line by line message
+        /*StringTokenizer strTok = new StringTokenizer("\n");
+        while (strTok.hasMoreTokens()) {
+            //Write this line on console
+            System.out.println(strTok.nextToken());
+            //Add to talk text area
+            ChatTextArea.append(String.format("%s\n", line));
+        }*/
+    }
+
+    /**
+     * Saves messages to text file.
+     */
+    public void saveToTextFile() {
+        //Assert presence of chatFile
+        this.assertChatFile();
+        //append to file
+        this.chatFile.appendToFile(this.ChatTextArea.getText());
     }
 
     /**
@@ -149,36 +205,28 @@ public class Communicator extends JPanel implements Serializable {
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jButton2 = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        ChatTextArea = new javax.swing.JTextArea();
+        BtnSaveToFile = new javax.swing.JButton();
+        BtnSend = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextArea2 = new javax.swing.JTextArea();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
+        BtnClear = new javax.swing.JButton();
+        BtnLoadFromFile = new javax.swing.JButton();
         jTextField1 = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setEditable(false);
-        jTextArea1.setFont(new java.awt.Font("Dialog", 0, 12));
-        jTextArea1.setLineWrap(true);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        ChatTextArea.setColumns(20);
+        ChatTextArea.setEditable(false);
+        ChatTextArea.setFont(new java.awt.Font("Dialog", 0, 12));
+        ChatTextArea.setLineWrap(true);
+        ChatTextArea.setRows(5);
+        jScrollPane1.setViewportView(ChatTextArea);
 
-        jButton2.setText("Zapisz rozmowę");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
-            }
-        });
+        BtnSaveToFile.setText(Strings.CM_CAPTION_SAVE_CHAT);
+        BtnSaveToFile.addActionListener(evt -> BtnSaveToFileActionPerformed(evt));
 
-        jButton1.setText("Wyślij wiadomość");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
-            }
-        });
+        BtnSend.setText(Strings.CM_CAPTION_SEND_MESSAGE);
+        BtnSend.addActionListener(evt -> BtnSendActionPerformed(evt));
 
         jTextArea2.setColumns(20);
         jTextArea2.setFont(new java.awt.Font("Dialog", 0, 12));
@@ -186,21 +234,13 @@ public class Communicator extends JPanel implements Serializable {
         jTextArea2.setRows(5);
         jScrollPane2.setViewportView(jTextArea2);
 
-        jButton3.setText("Wyczyść okno wiadomości");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
-            }
-        });
+        BtnClear.setText(Strings.CM_CAPTION_CLEAR_WINDOW);
+        BtnClear.addActionListener(evt -> BtnClearActionPerformed(evt));
 
-        jButton4.setText("Wczytaj rozmowę");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
-            }
-        });
+        BtnLoadFromFile.setText(Strings.CM_CAPTION_LOAD_CHAT);
+        BtnLoadFromFile.addActionListener(evt -> BtnLoadFromFileActionPerformed(evt));
 
-        jLabel1.setText("Nazwa Użytkownika");
+        jLabel1.setText(Strings.CM_LABEL_USER_NAME);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -212,12 +252,12 @@ public class Communicator extends JPanel implements Serializable {
                                         .addGroup(layout.createSequentialGroup()
                                                 .addGap(10, 10, 10)
                                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                                        .addComponent(jButton1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 218, Short.MAX_VALUE)
-                                                        .addComponent(jButton3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                        .addComponent(BtnSend, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 218, Short.MAX_VALUE)
+                                                        .addComponent(BtnClear, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                                 .addGap(40, 40, 40)
                                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                                        .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                                        .addComponent(BtnSaveToFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(BtnLoadFromFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                                                 .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING)
                                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 502, Short.MAX_VALUE))
@@ -237,13 +277,13 @@ public class Communicator extends JPanel implements Serializable {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addGroup(layout.createSequentialGroup()
-                                                .addComponent(jButton2)
+                                                .addComponent(BtnSaveToFile)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(jButton4))
+                                                .addComponent(BtnLoadFromFile))
                                         .addGroup(layout.createSequentialGroup()
-                                                .addComponent(jButton1)
+                                                .addComponent(BtnSend)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(jButton3)))
+                                                .addComponent(BtnClear)))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20, Short.MAX_VALUE)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                         .addComponent(jLabel1)
@@ -252,109 +292,73 @@ public class Communicator extends JPanel implements Serializable {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void BtnSaveToFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnSaveToFileActionPerformed
+        saveToTextFile();
+    }//GEN-LAST:event_BtnSaveToFileActionPerformed
 
-    //Procedura odpoiwadajca za zapis rozmowy do pliku tekstowego.
-    public void zapisz() {
+    public void clearInputArea() {
+        this.ChatTextArea.setText(" ");
+    }
+
+    private void BtnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnClearActionPerformed
+        clearInputArea();
+    }//GEN-LAST:event_BtnClearActionPerformed
+
+    private void BtnLoadFromFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnLoadFromFileActionPerformed
+        loadMessages();
+    }//GEN-LAST:event_BtnLoadFromFileActionPerformed
+
+    /**
+     * Sends messages.
+     */
+    public void send() {
         try {
-            getTranscriptFile();
-            setTranscriptFile(transcriptFile);//ustaw plik zapisu
-            String tekst = null;
-            //utworz strumien wyjsciowy do zapisu do pliku
-            BufferedWriter zapisz = new BufferedWriter(new FileWriter(transcriptFile));
-            tekst = jTextArea1.getText();//pobierz tresc rozmowy
-            zapisz.write(tekst + "\n");//wypisz tresc rozmowy do strumienia z enterem
-            zapisz.close();//zamknij strumien
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            //wypisz drzewko bledu
-        }
-    }
-
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
-        zapisz();
-    }//GEN-LAST:event_jButton2ActionPerformed
-
-    public void czysc() {
-        jTextArea1.setText(" ");//czysci pole rozmowy
-    }
-
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-        czysc();
-    }//GEN-LAST:event_jButton3ActionPerformed
-
-    //PLrocedura wczytuje tresc rozmowy i wyrzuca ja na pole rozmowy
-    public void wczytaj() {
-        try {
-            //sprobuj odczytac plik przez strumien wejsciowy
-            BufferedReader odczyt = new BufferedReader(new FileReader(transcriptFile));
-            String wiersz = null;
-
-            //dopoki mozna odczytac linie w strumieniu
-            while ((wiersz = odczyt.readLine()) != null) {
-                System.out.println(wiersz);//wypisz linie na konsole
-                jTextArea1.append(wiersz + "\n");//logDown linie na pole rozmowy
-            }
-            odczyt.close();//zaknij struminen
-        } catch (Exception ex) {
-            ex.printStackTrace();//wypisz drzewko bledu
-        }
-    }
-
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
-        wczytaj();
-    }//GEN-LAST:event_jButton4ActionPerformed
-
-    //procedura odpowiadajaca za wysylanie komunikatow do serwera
-    public void wyslij() {
-        try {//sprobuj
-            get_uzytkownik();
-            set_uzytkownik(uzytkownik);//ustaw uzyttkownika
-            //send tekst wraz z uzytkownikiem
-            piszWiad.println(uzytkownik + ": " + jTextArea2.getText());
-            piszWiad.flush();//przeczysc strumien
+            getUserName();
+            setUserName(userName);
+            //Add user's name as prefix to message
+            outgoingMessagesStream.println(userName + ": " + jTextArea2.getText());
+            //Send it away to destination and clear the stream
+            outgoingMessagesStream.flush();
         } catch (Exception ex) {
             ex.printStackTrace();
-            //wyp[isz drzewko blędu
         }
 
-        jTextArea2.setText(" ");//wyzeruj pole tekstowe służace do
-        //wpisywania tresci wiadomosci
-        jTextArea2.requestFocus();//wymmuś migajcą kreseczkę w tym polu
+        //Clear message in input text field and set focus there
+        jTextArea2.setText(" ");
+        jTextArea2.requestFocus();
     }
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        wyslij();
-    }//GEN-LAST:event_jButton1ActionPerformed
+    private void BtnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnSendActionPerformed
+        send();
+    }//GEN-LAST:event_BtnSendActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
+    private javax.swing.JButton BtnSend;
+    private javax.swing.JButton BtnSaveToFile;
+    private javax.swing.JButton BtnClear;
+    private javax.swing.JButton BtnLoadFromFile;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea ChatTextArea;
     private javax.swing.JTextArea jTextArea2;
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 
-    //Interfejs odpowiadający za obsługę przychodzących komuniktow
-    public class OdbiorcaKomunikatow implements Runnable {
-        //procedura odpowiadająca za działanie wątku
+    /**
+     * Interface responsible for reading incoming messages.
+     */
+    public class MessageReceiver implements Runnable {
+        //Responsible for work of Thread
         public void run() {
-            String wiadom;//łąńcuch tresci wiadomosci
-            try {//spróbuj
-                //dopóki możesz odczytac linie w otrzymanej wiadomosci
-                while ((wiadom = czytWiad.readLine()) != null) {
-                    //wypisz odczytana tresc wiadomosci w konsoli
-                    System.out.println("Odczytano: " + wiadom);
-                    //wypisz tress wiadomosci w polu tekstowym
-                    jTextArea1.append(wiadom + "\n");
+            String messageReceived;
+            try {
+                //As long as there is a line to read in message
+                while ((messageReceived = incomingMessagesStream.readLine()) != null) {
+                    //Show received message on console
+                    System.out.printf(Strings.CM_MSG_RECEIVED, messageReceived);
+                    //Add received message to text field as new line
+                    ChatTextArea.append(String.format("%s\n", messageReceived));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
