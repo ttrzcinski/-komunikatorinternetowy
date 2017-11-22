@@ -1,5 +1,7 @@
 package com.komunikatorinternetowy;
 
+import com.komunikatorinternetowy.utils.CloseSafe;
+
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -20,7 +22,7 @@ public class FilesIO {
      */
     private String filePath;
     /**
-     * Content of the last error, that occur.
+     * content of the last error, that occur.
      */
     private String lastError;
 
@@ -73,16 +75,6 @@ public class FilesIO {
         return new StringBuffer("[").append(this.now()).append("] ").append(content).toString();
     }
 
-    private void closeSafe(Closeable closeable) {
-        if (closeable != null) {
-            try {
-                closeable.close();
-            } catch (Exception exc_4) {
-                this.markError("Couldn't close safely the log file.");
-            }
-        }
-    }
-
     /**
      * Procedura tworzy nowy plik logu.
      */
@@ -101,7 +93,7 @@ public class FilesIO {
             //jeśli coś nie wyszło, pokaz komunikat błędu
             this.markError("Nie mozna utworzyc pliku " + this.filePath + this.fileName);
         } finally {
-            this.closeSafe(outputWriter);
+            CloseSafe.close(outputWriter, "FilesIO", "createNewFile");
         }
     }//
 
@@ -128,7 +120,7 @@ public class FilesIO {
             readLines = null;
             this.markError("Couldn't read log.");
         } finally {
-            this.closeSafe(inputBuffer);
+            CloseSafe.close(inputBuffer, "FilesIO", "readLogContent");
         }
 
         return readLines != null ? readLines.toString() : null;
@@ -152,7 +144,7 @@ public class FilesIO {
         } catch (IOException ioex2) {
             this.markError(ioex2.toString());
         } finally {
-            this.closeSafe(outputWriter);
+            CloseSafe.close(outputWriter, "FilesIO", "logDown");
         }
     }
 
