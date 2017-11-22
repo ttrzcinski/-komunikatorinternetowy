@@ -1,7 +1,8 @@
 package com.komunikatorinternetowy;
 
 
-import com.komunikatorinternetowy.Content.Strings;
+import com.komunikatorinternetowy.content.Strings;
+import com.komunikatorinternetowy.utils.FilesIO;
 
 import java.io.*;
 import java.net.*;

@@ -1,6 +1,7 @@
 package com.komunikatorinternetowy;
 
-import com.komunikatorinternetowy.Content.Strings;
+import com.komunikatorinternetowy.content.Strings;
+import com.komunikatorinternetowy.utils.FilesIO;
 
 import java.awt.Checkbox;
 import java.awt.Color;

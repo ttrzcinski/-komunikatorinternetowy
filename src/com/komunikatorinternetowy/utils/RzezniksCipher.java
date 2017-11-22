@@ -1,4 +1,4 @@
-package com.komunikatorinternetowy;
+package com.komunikatorinternetowy.utils;
 
 /**
  * Ciphering engine of component.

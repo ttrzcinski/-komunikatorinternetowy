@@ -1,6 +1,7 @@
 package com.komunikatorinternetowy;
 
-import com.komunikatorinternetowy.Content.Strings;
+import com.komunikatorinternetowy.content.Strings;
+import com.komunikatorinternetowy.utils.RzezniksCipher;
 
 import java.awt.Color;
 import java.awt.TextField;

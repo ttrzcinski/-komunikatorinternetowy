@@ -1,4 +1,4 @@
-package com.komunikatorinternetowy.Content;
+package com.komunikatorinternetowy.content;
 
 /**
  * Keeps array of all known Strings and Message Patterns used in application.
@@ -41,6 +41,11 @@ public class Strings {
     public final static String CM_MSG_RECEIVED = "Odczytano: %s%n";
     public final static String CM_MSG_READY = "Obsluga sieci przygotowana";
     public final static String CM_MSG_NO_CONNECTION = "Nie można nawiązać połączenia";
+    public final static String CM_CAPTION_SAVE_CHAT = "Zapisz rozmowę";
+    public final static String CM_CAPTION_SEND_MESSAGE = "Wyślij wiadomość";
+    public final static String CM_CAPTION_CLEAR_WINDOW = "Wyczyść okno wiadomości";
+    public final static String CM_CAPTION_LOAD_CHAT = "Wczytaj rozmowę";
+    public final static String CM_LABEL_USER_NAME = "Nazwa Użytkownika";
 
     //TODO Add two languages and translations here.
 }

@@ -1,8 +1,9 @@
-package com.komunikatorinternetowy;
+package com.komunikatorinternetowy.utils;
 
 import com.komunikatorinternetowy.utils.CloseSafe;
 
 import java.io.*;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -13,6 +14,8 @@ import java.util.Date;
  * @author Tomasz "Rzeźnik" Trzciński <ttrzcinski>
  */
 public class FilesIO {
+    private final static String DEFAULT_LOG_FILE_NAME = "Log.txt";
+
     /**
      * Name of currently processed file
      */
@@ -41,7 +44,7 @@ public class FilesIO {
     private void zeroStates() {
         //Set the same catalog with default name of log.
         this.filePath = "";
-        this.fileName = "Log.txt";
+        this.fileName = DEFAULT_LOG_FILE_NAME;
         this.lastError = "No error recorded.";
     }
 
@@ -72,7 +75,7 @@ public class FilesIO {
      * @return given content with actual date and time
      */
     private String convertToLogEntry(String content) {
-        return new StringBuffer("[").append(this.now()).append("] ").append(content).toString();
+        return String.format("[%s] %s", this.now(), content);
     }
 
     /**
@@ -86,12 +89,12 @@ public class FilesIO {
             outputWriter = new PrintWriter(new FileWriter(this.filePath + this.fileName));
 
             //dadaj do pliku naglowek
-            outputWriter.println("<<<Log programu utworzony " + this.now() + " >>>");
+            outputWriter.println(String.format("<<<Log programu utworzony %s >>>", this.now()));
             //logDown powód utworzenia nowego pliku
             outputWriter.println(this.convertToLogEntry("Nie można odczytać pliku logu. Utworzono nowy."));
         } catch (IOException ex1) {
             //jeśli coś nie wyszło, pokaz komunikat błędu
-            this.markError("Nie mozna utworzyc pliku " + this.filePath + this.fileName);
+            this.markError(MessageFormat.format("Nie mozna utworzyc pliku {0}{1}", this.filePath, this.fileName));
         } finally {
             CloseSafe.close(outputWriter, "FilesIO", "createNewFile");
         }
@@ -103,14 +106,13 @@ public class FilesIO {
      * @return content of log
      */
     public String readLogContent() {
-        StringBuffer readLines = null;
+        StringBuffer readLines;
         BufferedReader inputBuffer = null;
 
         try {
             inputBuffer = new BufferedReader(new FileReader(this.filePath + this.fileName));
-
-            //dopóki nie da sie odczyta linie - w javie nie ma EOF
-            String line = null;
+            //Read line by line
+            String line;
             readLines = new StringBuffer("");
             while ((line = inputBuffer.readLine()) != null) {
                 //Append read line as new line

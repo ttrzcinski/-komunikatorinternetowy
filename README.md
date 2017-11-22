@@ -1,5 +1,5 @@
 # -komunikatorinternetowy
-This aplication will give you a possibility of communiacting wtih your friends connect inside one network.  
+This application will give you a possibility of communication with your friends connect inside one network.
 
 People creating it: 
 Tomasz "Rzeźnik" Trzciński  
