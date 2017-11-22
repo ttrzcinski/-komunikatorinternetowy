@@ -38,5 +38,9 @@ public class Strings {
     public final static String CPR_CAPTION_WAITING = "W";
     public final static String CPR_CAPTION_SAVING = "Z";
 
+    public final static String CM_MSG_RECEIVED = "Odczytano: %s%n";
+    public final static String CM_MSG_READY = "Obsluga sieci przygotowana";
+    public final static String CM_MSG_NO_CONNECTION = "Nie można nawiązać połączenia";
+
     //TODO Add two languages and translations here.
 }
